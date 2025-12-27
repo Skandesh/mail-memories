@@ -32,8 +32,8 @@ if (useNeonHttp) {
     },
   });
 
-  neonConfig.fetchFunction = (input, init) =>
-    fetch(input, { ...init, dispatcher: neonAgent });
+  neonConfig.fetchFunction = (input: RequestInfo | URL, init?: RequestInit) =>
+    fetch(input, { ...init, dispatcher: neonAgent } as RequestInit);
 }
 
 const pool = useNeonHttp
