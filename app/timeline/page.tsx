@@ -1,8 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { GoogleSignInButton } from "@/components/google-signin-button";
 import { SignOutButton } from "@/components/sign-out-button";
+import { TimelineMemoryCard } from "@/components/timeline-memory-card";
 import { auth } from "@/lib/auth";
 import { getMemoriesForToday, type MemoryItem } from "@/lib/memories";
 
@@ -35,9 +37,7 @@ function extractEmail(value: string) {
   if (angleMatch?.[1]) {
     return angleMatch[1].trim();
   }
-  const emailMatch = value.match(
-    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i,
-  );
+  const emailMatch = value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
   return emailMatch?.[0] ?? "";
 }
 
@@ -87,7 +87,10 @@ function buildTimelineHref(params: {
 }
 
 function buildYearRange(startYear: number) {
-  return Array.from({ length: YEARS_BACK }, (_, index) => startYear - index - 1);
+  return Array.from(
+    { length: YEARS_BACK },
+    (_, index) => startYear - index - 1
+  );
 }
 
 function groupMemoriesByYear(memories: MemoryItem[]) {
@@ -170,22 +173,18 @@ export default async function TimelinePage({
     };
   });
   const yearsWithMemories = yearSummaries.filter(
-    (summary) => summary.count > 0,
+    (summary) => summary.count > 0
   );
   const hasMemories = filteredMemories.length > 0;
   const hasFilters = Boolean(recipientFilter || subjectFilter);
-  const filterSummaryParts = [
-    recipientFilter ? `to "${recipientFilter}"` : "",
-    subjectFilter ? `matching "${subjectFilter}"` : "",
-  ].filter(Boolean);
   const filterSummary = hasFilters
-    ? `Filtered ${filterSummaryParts.join(" + ")}.`
-    : "No filters applied.";
+    ? `Filtered results`
+    : "No filters applied";
   const compareSummaryA = yearSummaries.find(
-    (summary) => String(summary.year) === compareYearA,
+    (summary) => String(summary.year) === compareYearA
   );
   const compareSummaryB = yearSummaries.find(
-    (summary) => String(summary.year) === compareYearB,
+    (summary) => String(summary.year) === compareYearB
   );
   const compareDelta =
     (compareSummaryA?.count ?? 0) - (compareSummaryB?.count ?? 0);
@@ -199,24 +198,14 @@ export default async function TimelinePage({
       : "Select two years to compare.";
   const maxCount = Math.max(
     1,
-    ...yearSummaries.map((summary) => summary.count),
+    ...yearSummaries.map((summary) => summary.count)
   );
   const highlightYears = [...yearSummaries]
     .filter((summary) => summary.count > 0)
     .sort((a, b) => b.count - a.count)
     .slice(0, 3);
   const highlightMemory = filteredMemories[0];
-  const highlightTitle = highlightMemory?.subject ?? "No highlights yet";
-  const highlightSnippet =
-    highlightMemory?.snippet ??
-    "Reconnect Gmail to surface a shareable memory card.";
-  const highlightRecipient = highlightMemory?.to ?? "Your favorite recipient";
-  const highlightDate = highlightMemory?.date ?? monthDay;
-  const navItems = [
-    { href: "/", label: "Home", active: false },
-    { href: "/memories", label: "Memories", active: false },
-    { href: "/timeline", label: "Timeline", active: true },
-  ];
+
   const recipientCounts = new Map<string, { label: string; count: number }>();
   const domainCounts = new Map<string, number>();
 
@@ -257,27 +246,31 @@ export default async function TimelinePage({
   return (
     <div className="min-h-screen px-6 pb-24 pt-12 sm:px-10">
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
+        {/* Navigation */}
         <nav className="flex flex-wrap items-center justify-between gap-4 rounded-full border border-black/10 bg-white/80 px-4 py-2 shadow-[0_10px_30px_-24px_rgba(28,16,6,0.6)]">
           <span className="text-xs font-semibold uppercase tracking-[0.4em] text-black/40">
             Mail Memories
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={item.active ? "page" : undefined}
-                className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition ${
-                  item.active
-                    ? "bg-black text-white"
-                    : "text-black/60 hover:bg-black/5 hover:text-black"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+            <Link
+              href="/"
+              className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black/60 transition hover:bg-black/5 hover:text-black"
+            >
+              Home
+            </Link>
+            <Link
+              href="/memories"
+              className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black/60 transition hover:bg-black/5 hover:text-black"
+            >
+              Memories
+            </Link>
+            <span className="rounded-full bg-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white">
+              Timeline
+            </span>
           </div>
         </nav>
+
+        {/* Header */}
         <header className="flex flex-col gap-6 rounded-[28px] border border-black/10 bg-white/70 p-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.4em] text-black/50">
@@ -293,16 +286,25 @@ export default async function TimelinePage({
                 Back to feed
               </Link>
             </div>
-            <div className="mt-6 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-black/50">
-              {yearRange.map((year) => (
-                <a
-                  key={year}
-                  href={`#year-${year}`}
-                  className="rounded-full border border-black/10 px-3 py-1 text-[11px] transition hover:border-black/30 hover:text-black"
-                >
-                  {year}
-                </a>
-              ))}
+            <div className="mt-6 flex flex-wrap gap-2">
+              {yearRange.map((year) => {
+                const summary = yearSummaries.find((s) => s.year === year);
+                const hasItems = (summary?.count ?? 0) > 0;
+                return (
+                  <a
+                    key={year}
+                    href={`#year-${year}`}
+                    className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] transition ${
+                      hasItems
+                        ? "border-black bg-black text-white hover:bg-black/80"
+                        : "border-black/10 text-black/50 hover:border-black/30 hover:text-black"
+                    }`}
+                  >
+                    {year}
+                    {hasItems && ` · ${summary?.count}`}
+                  </a>
+                );
+              })}
             </div>
           </div>
           <SignOutButton />
@@ -311,16 +313,18 @@ export default async function TimelinePage({
         {memoriesResult.status !== "ok" ? (
           <section className="rounded-[28px] border border-black/10 bg-white/80 p-8">
             <p className="text-sm text-black/70">{memoriesResult.message}</p>
-            {memoriesResult.status === "needs-connection" ? (
+            {memoriesResult.status === "needs-connection" && (
               <div className="mt-6">
                 <GoogleSignInButton label="Reconnect Gmail" />
               </div>
-            ) : null}
+            )}
           </section>
         ) : (
           <>
+            {/* Filters & Stats Grid */}
             <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
               <div className="space-y-6">
+                {/* Filter Card */}
                 <div className="rounded-[28px] border border-black/10 bg-white/80 p-6 shadow-[0_16px_45px_-38px_rgba(28,16,6,0.6)]">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-black/50">
@@ -334,12 +338,12 @@ export default async function TimelinePage({
                     className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr_auto]"
                     method="get"
                   >
-                    {compareYearA ? (
+                    {compareYearA && (
                       <input type="hidden" name="yearA" value={compareYearA} />
-                    ) : null}
-                    {compareYearB ? (
+                    )}
+                    {compareYearB && (
                       <input type="hidden" name="yearB" value={compareYearB} />
-                    ) : null}
+                    )}
                     <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-black/50">
                       Recipient
                       <input
@@ -365,7 +369,7 @@ export default async function TimelinePage({
                       >
                         Apply
                       </button>
-                      {hasFilters ? (
+                      {hasFilters && (
                         <Link
                           href={buildTimelineHref({
                             yearA: compareYearA,
@@ -375,10 +379,11 @@ export default async function TimelinePage({
                         >
                           Clear
                         </Link>
-                      ) : null}
+                      )}
                     </div>
                   </form>
-                  {topRecipients.length > 0 ? (
+
+                  {topRecipients.length > 0 && (
                     <div className="mt-6">
                       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-black/40">
                         Top recipients
@@ -409,8 +414,9 @@ export default async function TimelinePage({
                         })}
                       </div>
                     </div>
-                  ) : null}
-                  {topDomains.length > 0 ? (
+                  )}
+
+                  {topDomains.length > 0 && (
                     <div className="mt-5">
                       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-black/40">
                         Top domains
@@ -442,37 +448,40 @@ export default async function TimelinePage({
                         })}
                       </div>
                     </div>
-                  ) : null}
+                  )}
                 </div>
 
-                <div className="relative overflow-hidden rounded-[28px] border border-black/10 bg-[var(--ink)] p-6 text-white shadow-[0_20px_55px_-40px_rgba(28,16,6,0.8)]">
-                  <div className="absolute -right-10 -top-14 h-44 w-44 rounded-full bg-[color:var(--glow-peach)]/70 blur-[80px]" />
-                  <div className="absolute -left-8 bottom-0 h-44 w-44 rounded-full bg-[color:var(--glow-mint)]/50 blur-[90px]" />
-                  <div className="relative space-y-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">
-                      Share highlight
-                    </p>
-                    <div className="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-                      <span className="rounded-full border border-white/20 px-3 py-1 text-[11px]">
-                        {highlightDate}
-                      </span>
-                      <span>{monthDay}</span>
-                    </div>
-                    <h2 className="font-display text-2xl text-white">
-                      {highlightTitle}
-                    </h2>
-                    <p className="text-sm text-white/70">{highlightSnippet}</p>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-                      {highlightRecipient}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-3 pt-2">
-                      <button
-                        type="button"
-                        className="inline-flex h-10 items-center justify-center rounded-full bg-white px-4 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-white/80"
-                      >
-                        Share card
-                      </button>
-                      {highlightMemory ? (
+                {/* Featured Memory Card */}
+                {highlightMemory && (
+                  <div className="relative overflow-hidden rounded-[28px] border border-black/10 bg-[var(--ink)] p-6 text-white shadow-[0_20px_55px_-40px_rgba(28,16,6,0.8)]">
+                    <div className="absolute -right-10 -top-14 h-44 w-44 rounded-full bg-[color:var(--glow-peach)]/70 blur-[80px]" />
+                    <div className="absolute -left-8 bottom-0 h-44 w-44 rounded-full bg-[color:var(--glow-mint)]/50 blur-[90px]" />
+                    <div className="relative space-y-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">
+                        Share highlight
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                        <span className="rounded-full border border-white/20 px-3 py-1 text-[11px]">
+                          {highlightMemory.date}
+                        </span>
+                        <span>{monthDay}</span>
+                      </div>
+                      <h2 className="font-display text-2xl text-white">
+                        {highlightMemory.subject}
+                      </h2>
+                      <p className="text-sm text-white/70">
+                        {highlightMemory.snippet}
+                      </p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+                        {highlightMemory.to}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 pt-2">
+                        <button
+                          type="button"
+                          className="inline-flex h-10 items-center justify-center rounded-full bg-white px-4 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-white/80"
+                        >
+                          Share card
+                        </button>
                         <a
                           href={highlightMemory.gmailLink}
                           target="_blank"
@@ -481,13 +490,14 @@ export default async function TimelinePage({
                         >
                           Open in Gmail
                         </a>
-                      ) : null}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="space-y-6">
+                {/* Year Comparison Card */}
                 <div className="rounded-[28px] border border-black/10 bg-[var(--ink)] p-6 text-white shadow-[0_20px_55px_-40px_rgba(28,16,6,0.8)]">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">
@@ -501,16 +511,16 @@ export default async function TimelinePage({
                     className="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
                     method="get"
                   >
-                    {recipientFilter ? (
+                    {recipientFilter && (
                       <input type="hidden" name="to" value={recipientFilter} />
-                    ) : null}
-                    {subjectFilter ? (
+                    )}
+                    {subjectFilter && (
                       <input
                         type="hidden"
                         name="subject"
                         value={subjectFilter}
                       />
-                    ) : null}
+                    )}
                     <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
                       Year A
                       <select
@@ -519,11 +529,7 @@ export default async function TimelinePage({
                         className="h-11 rounded-full border border-white/20 bg-white/10 px-4 text-sm font-semibold text-white transition focus:border-white/40 focus:outline-none"
                       >
                         {yearOptions.map((year) => (
-                          <option
-                            key={year}
-                            value={year}
-                            className="text-black"
-                          >
+                          <option key={year} value={year} className="text-black">
                             {year}
                           </option>
                         ))}
@@ -537,11 +543,7 @@ export default async function TimelinePage({
                         className="h-11 rounded-full border border-white/20 bg-white/10 px-4 text-sm font-semibold text-white transition focus:border-white/40 focus:outline-none"
                       >
                         {yearOptions.map((year) => (
-                          <option
-                            key={year}
-                            value={year}
-                            className="text-black"
-                          >
+                          <option key={year} value={year} className="text-black">
                             {year}
                           </option>
                         ))}
@@ -549,11 +551,12 @@ export default async function TimelinePage({
                     </label>
                     <button
                       type="submit"
-                      className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-white/80"
+                      className="inline-flex h-11 items-center justify-center self-end rounded-full bg-white px-5 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-white/80"
                     >
                       Compare
                     </button>
                   </form>
+
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     {[compareSummaryA, compareSummaryB].map((summary) => {
                       const topMemory = summary?.items[0];
@@ -581,18 +584,19 @@ export default async function TimelinePage({
                             {topMemory?.snippet ||
                               "Pick this year to compare activity."}
                           </p>
-                          {summary?.year ? (
+                          {summary?.year && (
                             <a
                               href={`#year-${summary.year}`}
                               className="mt-3 inline-flex text-xs font-semibold uppercase tracking-[0.2em] text-white/70 transition hover:text-white"
                             >
                               Jump to year
                             </a>
-                          ) : null}
+                          )}
                         </div>
                       );
                     })}
                   </div>
+
                   <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
                       Busiest years
@@ -617,6 +621,7 @@ export default async function TimelinePage({
                   </div>
                 </div>
 
+                {/* Year Activity */}
                 <div className="rounded-[28px] border border-black/10 bg-white/70 p-6 shadow-[0_16px_45px_-38px_rgba(28,16,6,0.6)]">
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-black/50">
                     Year activity
@@ -633,14 +638,12 @@ export default async function TimelinePage({
                             className="h-full rounded-full bg-black/70"
                             style={{
                               width: `${Math.round(
-                                (summary.count / maxCount) * 100,
+                                (summary.count / maxCount) * 100
                               )}%`,
                             }}
                           />
                         </div>
-                        <span className="w-12 text-right">
-                          {summary.count}
-                        </span>
+                        <span className="w-12 text-right">{summary.count}</span>
                       </div>
                     ))}
                   </div>
@@ -648,6 +651,7 @@ export default async function TimelinePage({
               </div>
             </section>
 
+            {/* Timeline Section */}
             <section className="relative rounded-[32px] border border-black/10 bg-white/70 p-8">
               <div className="absolute left-10 top-10 h-[calc(100%-5rem)] w-px bg-black/10" />
               <div className="space-y-8">
@@ -664,11 +668,15 @@ export default async function TimelinePage({
                       id={`year-${year}`}
                       className="relative scroll-mt-24 pl-16"
                     >
-                      <div className="absolute left-8 top-2 h-5 w-5 rounded-full border border-black/20 bg-white shadow-[0_8px_20px_-14px_rgba(28,16,6,0.8)]" />
+                      <div className="absolute left-8 top-2 flex h-5 w-5 items-center justify-center rounded-full border border-black/20 bg-white text-[9px] font-bold text-black/50 shadow-[0_8px_20px_-14px_rgba(28,16,6,0.8)]">
+                        {items.length > 0 ? items.length : "·"}
+                      </div>
                       <div className="rounded-[24px] border border-black/10 bg-white/80 p-6 shadow-[0_18px_50px_-40px_rgba(28,16,6,0.6)]">
                         <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-black/50">
                           <div className="flex items-center gap-3">
-                            <span>{year}</span>
+                            <span className="font-display text-lg text-black">
+                              {year}
+                            </span>
                             <span className="rounded-full border border-black/10 px-3 py-1 text-[11px]">
                               {monthDay}
                             </span>
@@ -680,32 +688,13 @@ export default async function TimelinePage({
                             No sent memories on this date.
                           </p>
                         ) : (
-                          <div className="mt-4 space-y-4">
-                            {items.map((memory) => (
-                              <div
+                          <div className="mt-4 space-y-3">
+                            {items.map((memory, index) => (
+                              <TimelineMemoryCard
                                 key={memory.id}
-                                className="rounded-2xl border border-black/10 bg-white/90 p-4"
-                              >
-                                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-black/50">
-                                  <span>{memory.to}</span>
-                                  <span>{memory.date}</span>
-                                </div>
-                                <h2 className="mt-3 text-base font-semibold text-black">
-                                  {memory.subject}
-                                </h2>
-                                <p className="mt-2 text-sm text-black/60">
-                                  {memory.snippet ||
-                                    "No preview available yet."}
-                                </p>
-                                <a
-                                  href={memory.gmailLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="mt-3 inline-flex items-center text-xs font-semibold uppercase tracking-[0.2em] text-black/60 transition hover:text-black"
-                                >
-                                  Open in Gmail
-                                </a>
-                              </div>
+                                memory={memory}
+                                index={index}
+                              />
                             ))}
                           </div>
                         )}
